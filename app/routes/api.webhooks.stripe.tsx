@@ -51,7 +51,7 @@ export async function action(args: Route.ActionArgs) {
 
         if (clerkUserId) {
           // Flow A — Clerk user already exists.
-          await syncSubscriptionToClerk(clerkUserId);
+          await syncSubscriptionToClerk(clerkUserId, { force: true });
         } else {
           // Flow B — provision a Clerk user via invitation.
           await provisionFromGuestCheckout(session);
@@ -67,7 +67,7 @@ export async function action(args: Route.ActionArgs) {
             ? subscription.customer
             : subscription.customer.id;
         const userId = await clerkUserIdForCustomer(customerId);
-        if (userId) await syncSubscriptionToClerk(userId);
+        if (userId) await syncSubscriptionToClerk(userId, { force: true });
         break;
       }
 
@@ -113,7 +113,7 @@ async function provisionFromGuestCheckout(
     limit: 1,
   });
   if (existing.data.length > 0) {
-    await syncSubscriptionToClerk(existing.data[0].id);
+    await syncSubscriptionToClerk(existing.data[0].id, { force: true });
     return;
   }
 

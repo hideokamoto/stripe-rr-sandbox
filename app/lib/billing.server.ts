@@ -76,14 +76,30 @@ async function resolveCustomerId(
  *   - the dashboard loader (self-heal, completes the link for Flow B users)
  *
  * Idempotent: safe to call repeatedly.
+ *
+ * To keep page loads cheap, the Stripe round-trip is skipped when the user
+ * already has synced metadata; pass `{ force: true }` (e.g. from webhooks,
+ * which are the real-time source of truth) to always refetch.
  */
 export async function syncSubscriptionToClerk(
   clerkUserId: string,
+  options?: { force?: boolean },
 ): Promise<SubscriptionMetadata | null> {
   const stripe = getStripe();
   const clerk = getClerk();
 
   const user = await clerk.users.getUser(clerkUserId);
+
+  // Fast path: already synced and no refresh forced — return cached metadata
+  // without hitting Stripe. Webhooks keep this up to date in real time.
+  if (
+    !options?.force &&
+    user.publicMetadata &&
+    "subscriptionStatus" in user.publicMetadata
+  ) {
+    return readSubscription(user.publicMetadata as Record<string, unknown>);
+  }
+
   const email =
     user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
       ?.emailAddress ??
@@ -110,14 +126,9 @@ export async function syncSubscriptionToClerk(
     stripeSubscriptionId: sub?.id ?? null,
     plan: findPlanByPriceId(priceId)?.key ?? null,
     subscriptionStatus: sub?.status ?? "none",
-    // current_period_end lives on the subscription item in recent API versions,
-    // with a fallback to the subscription for older shapes.
-    currentPeriodEnd:
-      (item as { current_period_end?: number } | undefined)
-        ?.current_period_end ??
-      (sub as unknown as { current_period_end?: number } | undefined)
-        ?.current_period_end ??
-      null,
+    // In this API version current_period_end lives on the subscription item,
+    // not the subscription object.
+    currentPeriodEnd: item?.current_period_end ?? null,
   };
 
   await clerk.users.updateUserMetadata(clerkUserId, {

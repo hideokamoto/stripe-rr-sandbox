@@ -33,6 +33,11 @@ export async function action(args: Route.ActionArgs) {
       metadata: { clerkUserId: userId },
     });
     customerId = customer.id;
+    // Persist immediately so an abandoned/retried checkout reuses this customer
+    // instead of creating a duplicate.
+    await clerk.users.updateUserMetadata(userId, {
+      publicMetadata: { stripeCustomerId: customerId },
+    });
   }
 
   const session = await createEmbeddedSubscriptionSession({
