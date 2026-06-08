@@ -6,10 +6,24 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import {
+  rootAuthLoader,
+  clerkMiddleware,
+} from "@clerk/react-router/server";
+import { ClerkProvider } from "@clerk/react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 
+/** Attach Clerk auth to the request context on every route. */
+export const middleware: Route.MiddlewareFunction[] = [clerkMiddleware()];
+
+/** Root loader: inject Clerk auth state so it's available client-side. */
+export async function loader(args: Route.LoaderArgs) {
+  return rootAuthLoader(args);
+}
+
+/** Document `<link>` tags (fonts) for every page. */
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -23,6 +37,7 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+/** HTML document shell shared by every route and the error boundary. */
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -41,10 +56,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  return <Outlet />;
+/** App root: wrap all routes in Clerk's provider using root loader data. */
+export default function App({ loaderData }: Route.ComponentProps) {
+  return (
+    <ClerkProvider loaderData={loaderData} signInFallbackRedirectUrl="/dashboard">
+      <Outlet />
+    </ClerkProvider>
+  );
 }
 
+/** Top-level error boundary rendering 404s and unexpected errors. */
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
