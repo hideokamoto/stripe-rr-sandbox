@@ -14,7 +14,7 @@ subscription state, and a Stripe customer linked back via
 
 ## How the two flows converge
 
-```
+```text
 /pricing (2 CTAs)
  ├─ Flow A: /sign-up → /subscribe → POST /api/checkout/authenticated
  │            (client_reference_id = clerkUserId)

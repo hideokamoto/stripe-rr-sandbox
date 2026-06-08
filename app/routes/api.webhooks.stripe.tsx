@@ -113,7 +113,13 @@ async function provisionFromGuestCheckout(
     limit: 1,
   });
   if (existing.data.length > 0) {
-    await syncSubscriptionToClerk(existing.data[0].id, { force: true });
+    const userId = existing.data[0].id;
+    // Pin the resolved customer id first so the sync can't match a different
+    // customer via email lookup.
+    await clerk.users.updateUserMetadata(userId, {
+      publicMetadata: { stripeCustomerId: customerId },
+    });
+    await syncSubscriptionToClerk(userId, { force: true });
     return;
   }
 

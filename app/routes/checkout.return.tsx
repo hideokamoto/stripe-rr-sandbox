@@ -3,12 +3,18 @@ import type { Route } from "./+types/checkout.return";
 import { Shell } from "~/components/layout";
 import { getStripe } from "~/lib/stripe.server";
 
+/** Resolve the completed Checkout Session and detect which flow it belongs to. */
 export async function loader(args: Route.LoaderArgs) {
   const url = new URL(args.request.url);
   const sessionId = url.searchParams.get("session_id");
   if (!sessionId) throw redirect("/pricing");
 
-  const session = await getStripe().checkout.sessions.retrieve(sessionId);
+  // A tampered or expired session_id makes retrieve throw; treat it as invalid
+  // and send the user back to pricing rather than surfacing a 500.
+  const session = await getStripe()
+    .checkout.sessions.retrieve(sessionId)
+    .catch(() => null);
+  if (!session) throw redirect("/pricing");
 
   // Flow A sessions carry the Clerk userId; Flow B sessions do not.
   const isFlowA = Boolean(session.client_reference_id);
@@ -20,6 +26,7 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+/** Post-checkout page: dashboard CTA for Flow A, "check your email" for Flow B. */
 export default function CheckoutReturn({ loaderData }: Route.ComponentProps) {
   const { status, isFlowA, email } = loaderData;
 

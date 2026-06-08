@@ -33,6 +33,7 @@ export function readSubscription(
   };
 }
 
+/** True when the subscription grants access (active or trialing). */
 export function isActive(sub: SubscriptionMetadata | null): boolean {
   return (
     sub?.subscriptionStatus === "active" ||

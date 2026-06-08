@@ -4,10 +4,12 @@ import { CheckoutEmbed } from "~/components/embedded-checkout";
 import { env } from "~/lib/env.server";
 import { getPlans } from "~/lib/plans";
 
+/** Page metadata for the guest subscribe page. */
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Subscribe — SaaSKit" }];
 }
 
+/** Resolve the selected plan and expose the publishable key to the client. */
 export async function loader(args: Route.LoaderArgs) {
   const url = new URL(args.request.url);
   const requestedPlan = url.searchParams.get("plan");
@@ -20,6 +22,7 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+/** Flow B checkout: public embedded Stripe Checkout for anonymous visitors. */
 export default function Join({ loaderData }: Route.ComponentProps) {
   const { publishableKey, priceId } = loaderData;
 

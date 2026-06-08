@@ -5,10 +5,12 @@ import { Shell } from "~/components/layout";
 import { syncSubscriptionToClerk, isActive } from "~/lib/billing.server";
 import { findPlanByKey } from "~/lib/plans";
 
+/** Page metadata for the dashboard. */
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Dashboard — SaaSKit" }];
 }
 
+/** Require auth and self-heal subscription state from Stripe into Clerk. */
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args);
   if (!userId) throw redirect("/sign-in");
@@ -16,7 +18,13 @@ export async function loader(args: Route.LoaderArgs) {
   // Self-heal: pull the latest state from Stripe into Clerk publicMetadata.
   // For Flow B users signing in for the first time, this completes the link
   // (customer.metadata.clerkUserId) and fills in the unified subscription shape.
-  const subscription = await syncSubscriptionToClerk(userId);
+  // Best-effort: a transient sync error should not 500 the dashboard.
+  let subscription: Awaited<ReturnType<typeof syncSubscriptionToClerk>> = null;
+  try {
+    subscription = await syncSubscriptionToClerk(userId);
+  } catch (error) {
+    console.error("Dashboard subscription sync failed", { userId, error });
+  }
   const plan = findPlanByKey(subscription?.plan ?? undefined);
 
   return {
@@ -26,6 +34,7 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+/** Shared end-state for both flows: shows unified subscription status. */
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const { subscription, active, planName } = loaderData;
 

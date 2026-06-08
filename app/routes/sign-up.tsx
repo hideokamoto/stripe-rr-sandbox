@@ -1,6 +1,7 @@
 import { SignUp } from "@clerk/react-router";
 import { Shell } from "~/components/layout";
 
+/** Clerk-hosted sign-up page (Flow A entry, also used for Flow B invites). */
 export default function SignUpPage() {
   return (
     <Shell>

@@ -7,6 +7,7 @@ import {
 
 // Cache the Stripe.js promise per publishable key across remounts.
 let stripePromise: Promise<Stripe | null> | null = null;
+/** Load (and memoize) Stripe.js for the given publishable key. */
 function getStripeJs(publishableKey: string) {
   if (!stripePromise) stripePromise = loadStripe(publishableKey);
   return stripePromise;

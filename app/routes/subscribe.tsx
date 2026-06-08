@@ -7,12 +7,19 @@ import { env } from "~/lib/env.server";
 import { getPlans } from "~/lib/plans";
 import { syncSubscriptionToClerk, isActive } from "~/lib/billing.server";
 
+/** Guard the page: require auth, skip to dashboard if already subscribed. */
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args);
   if (!userId) throw redirect("/sign-in");
 
-  // If the user already has an active subscription, skip checkout.
-  const current = await syncSubscriptionToClerk(userId);
+  // If the user already has an active subscription, skip checkout. Treat the
+  // sync as best-effort so a transient Stripe/Clerk error never blocks checkout.
+  let current: Awaited<ReturnType<typeof syncSubscriptionToClerk>> = null;
+  try {
+    current = await syncSubscriptionToClerk(userId);
+  } catch (error) {
+    console.error("Pre-checkout subscription sync failed", { userId, error });
+  }
   if (isActive(current)) throw redirect("/dashboard");
 
   const url = new URL(args.request.url);
@@ -26,6 +33,7 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+/** Flow A checkout: embedded Stripe Checkout for the authenticated user. */
 export default function Subscribe({ loaderData }: Route.ComponentProps) {
   const { publishableKey, priceId } = loaderData;
 

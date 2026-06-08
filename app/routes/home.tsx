@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { Shell } from "~/components/layout";
 
+/** Page metadata for the landing page. */
 export function meta(_: Route.MetaArgs) {
   return [
     { title: "SaaSKit — Clerk + Stripe starter" },
@@ -12,6 +13,7 @@ export function meta(_: Route.MetaArgs) {
   ];
 }
 
+/** Landing page introducing both signup flows. */
 export default function Home() {
   return (
     <Shell>

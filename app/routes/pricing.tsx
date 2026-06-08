@@ -3,10 +3,12 @@ import type { Route } from "./+types/pricing";
 import { Shell } from "~/components/layout";
 import { getPlans } from "~/lib/plans";
 
+/** Page metadata for the pricing page. */
 export function meta(_: Route.MetaArgs) {
   return [{ title: "Pricing — SaaSKit" }];
 }
 
+/** Expose non-secret plan info (key/name/interval) to the client. */
 export async function loader(_: Route.LoaderArgs) {
   // Only expose non-secret plan info to the client.
   const plans = getPlans().map((p) => ({
@@ -17,6 +19,7 @@ export async function loader(_: Route.LoaderArgs) {
   return { plans };
 }
 
+/** Public pricing page with the two flow CTAs (sign-up first / subscribe first). */
 export default function Pricing({ loaderData }: Route.ComponentProps) {
   const { plans } = loaderData;
 
