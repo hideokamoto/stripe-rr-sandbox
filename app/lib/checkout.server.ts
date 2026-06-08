@@ -50,10 +50,11 @@ export async function createEmbeddedSubscriptionSession(opts: {
 
   if (opts.customerId) {
     params.customer = opts.customerId;
-  } else {
-    // Guest flow (or first-time): let Stripe persist a customer and collect email.
-    params.customer_creation = "always";
-    if (opts.customerEmail) params.customer_email = opts.customerEmail;
+  } else if (opts.customerEmail) {
+    // Guest flow: subscription mode always creates a Customer automatically
+    // (customer_creation is payment-mode only and would be rejected here).
+    // Prefill the email when we happen to know it; otherwise Checkout collects it.
+    params.customer_email = opts.customerEmail;
   }
 
   return stripe.checkout.sessions.create(params);

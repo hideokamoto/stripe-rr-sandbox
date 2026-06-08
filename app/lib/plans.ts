@@ -3,9 +3,9 @@
  * `plan` keys are stored verbatim in Clerk publicMetadata so the dashboard
  * can render a friendly name regardless of which signup flow was used.
  *
- * This module is safe to import on both server and client: the Price IDs are
- * also exposed through VITE_-prefixed vars are NOT used here — instead the
- * client receives the plan list via loader data, keeping secrets server-side.
+ * Price IDs are read from server-only env vars; the client never receives them
+ * directly. Pages expose only non-secret plan info (key/name/interval) via
+ * loader data, so this module is only imported from server code.
  */
 export type PlanInterval = "month" | "year";
 
