@@ -1,0 +1,26 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test passed"
+
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deployed"
+
+workflows:
+  approval-notification-test:
+    jobs:
+      - test
+      - hold-for-approval:
+          type: approval
+          requires:
+            - test
+      - deploy:
+          requires:
+            - hold-for-approval
