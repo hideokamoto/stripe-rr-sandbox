@@ -7,8 +7,18 @@
  */
 import "dotenv/config";
 import Stripe from "stripe";
+import type { ProductCategory } from "~/lib/product-taxonomy";
 
-const SAMPLE_PRODUCTS = [
+interface SampleProduct {
+  name: string;
+  description: string;
+  unitAmount: number;
+  metadata: { category: ProductCategory; use_case: string };
+}
+
+// `category` is typed against ProductCategory so it can't silently drift
+// from the categories app/lib/shopping-assistant.server.ts classifies into.
+const SAMPLE_PRODUCTS: SampleProduct[] = [
   {
     name: "トレイルランニングシューズ Alpha",
     description: "軽量メッシュアッパーと高グリップソールを備えたトレイル向けランニングシューズ。",
@@ -45,7 +55,7 @@ const SAMPLE_PRODUCTS = [
     unitAmount: 128000,
     metadata: { category: "mobility", use_case: "commute" },
   },
-] as const;
+];
 
 async function main() {
   const secretKey = process.env.STRIPE_SECRET_KEY;

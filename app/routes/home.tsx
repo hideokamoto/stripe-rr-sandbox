@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { Route } from "./+types/home";
+import type { ChatProduct, ChatUIMessage } from "~/lib/chat-message";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,28 +15,6 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-interface SearchProductsOutput {
-  count: number;
-  products: Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    priceJpy: number | null;
-    currency: string | null;
-    metadata: Record<string, string>;
-  }>;
-}
-
-interface PurchaseIntentOutput {
-  purchaseIntent: { type: "score"; score: number; confidence: number };
-  needsHumanHandoff: {
-    type: "noul";
-    value: boolean;
-    confidence: number;
-    probabilities: { true: number; false: number };
-  };
-}
-
 function formatYen(amount: number | null) {
   if (amount === null) return "価格未設定";
   return new Intl.NumberFormat("ja-JP", {
@@ -44,8 +23,8 @@ function formatYen(amount: number | null) {
   }).format(amount);
 }
 
-function ProductCards({ output }: { output: SearchProductsOutput }) {
-  if (output.count === 0) {
+function ProductCards({ products }: { products: ChatProduct[] }) {
+  if (products.length === 0) {
     return (
       <p className="text-sm text-gray-500 mt-2">
         条件に合う商品が見つかりませんでした。
@@ -55,7 +34,7 @@ function ProductCards({ output }: { output: SearchProductsOutput }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-      {output.products.map((product) => (
+      {products.map((product) => (
         <div
           key={product.id}
           className="border border-gray-200 rounded-lg p-3 bg-white"
@@ -75,32 +54,9 @@ function ProductCards({ output }: { output: SearchProductsOutput }) {
   );
 }
 
-function PurchaseIntentBadge({ output }: { output: PurchaseIntentOutput }) {
-  const { purchaseIntent, needsHumanHandoff } = output;
-  return (
-    <div className="flex flex-wrap gap-2 mt-2 text-xs">
-      <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-        購入意欲スコア: {purchaseIntent.score.toFixed(2)} (確信度{" "}
-        {(purchaseIntent.confidence * 100).toFixed(0)}%)
-      </span>
-      <span
-        className={`px-2 py-1 rounded-full border ${
-          needsHumanHandoff.value
-            ? "bg-amber-50 text-amber-700 border-amber-200"
-            : "bg-emerald-50 text-emerald-700 border-emerald-200"
-        }`}
-      >
-        {needsHumanHandoff.value
-          ? "人間の担当者への引き継ぎ推奨"
-          : "AIチャットで対応継続可"}
-      </span>
-    </div>
-  );
-}
-
 export default function Home() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
@@ -121,7 +77,7 @@ export default function Home() {
           <h1 className="text-xl font-bold">AI チャットコマース サンプル</h1>
           <p className="text-sm text-gray-500 mt-1">
             Cloudflare Workers AI (gpt-oss) が接客し、Stripe Search API
-            で商品を検索、typesafe/jev が購入意欲を評価します。
+            で実在庫を検索します。
           </p>
         </header>
 
@@ -158,26 +114,11 @@ export default function Home() {
                     );
                   }
 
-                  if (
-                    part.type === "tool-searchProducts" &&
-                    part.state === "output-available"
-                  ) {
+                  if (part.type === "data-products") {
                     return (
                       <ProductCards
                         key={index}
-                        output={part.output as SearchProductsOutput}
-                      />
-                    );
-                  }
-
-                  if (
-                    part.type === "tool-assessPurchaseIntent" &&
-                    part.state === "output-available"
-                  ) {
-                    return (
-                      <PurchaseIntentBadge
-                        key={index}
-                        output={part.output as PurchaseIntentOutput}
+                        products={part.data.products}
                       />
                     );
                   }
