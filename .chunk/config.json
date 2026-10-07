@@ -1,0 +1,18 @@
+{
+  "commands": [
+    {
+      "name": "install",
+      "run": "npm ci"
+    },
+    {
+      "name": "test",
+      "run": "npm test",
+      "role": "gate",
+      "timeout": 300
+    }
+  ],
+  "vcs": {
+    "org": "hideokamoto",
+    "repo": "stripe-rr-sandbox"
+  }
+}
